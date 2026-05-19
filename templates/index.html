@@ -1,584 +1,70 @@
-<!DOCTYPE html>
-<html lang="en" data-theme="dark">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>YT / TikTok to MP3/MP4</title>
-    <style>
-        :root[data-theme="dark"] {
-            --bg: #0f0f0f;
-            --surface: #1a1a1a;
-            --border: #2a2a2a;
-            --text: #e1e1e1;
-            --text-muted: #666;
-            --text-dim: #888;
-            --input-bg: #1a1a1a;
-        }
-        :root[data-theme="light"] {
-            --bg: #f5f5f5;
-            --surface: #ffffff;
-            --border: #e0e0e0;
-            --text: #1a1a1a;
-            --text-muted: #999;
-            --text-dim: #777;
-            --input-bg: #ffffff;
-        }
+{% extends "base.html" %}
+{% block title %}MediaToolbox - Free Online Audio & Video Tools{% endblock %}
+{% block description %}Free online media tools - convert formats, compress videos, trim audio, download from YouTube and TikTok{% endblock %}
 
-        * { margin: 0; padding: 0; box-sizing: border-box; }
+{% block content %}
+<div style="text-align:center; margin-bottom: 40px;">
+    <h1 class="page-title" style="font-size:2.2rem;">Free Media Tools</h1>
+    <p class="page-subtitle">Convert, compress, trim, and download - all in your browser</p>
+</div>
 
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-            background: var(--bg);
-            color: var(--text);
-            min-height: 100vh;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            transition: background 0.3s, color 0.3s;
-        }
+<div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 16px;">
 
-        .container {
-            width: 100%;
-            max-width: 620px;
-            padding: 20px;
-        }
+    <a href="/youtube" class="tool-card">
+        <div class="tool-icon">&#9654;</div>
+        <h3>YT / TikTok Downloader</h3>
+        <p>Download audio or video from YouTube and TikTok. Choose MP3, M4A, or MP4 with quality options.</p>
+    </a>
 
-        .header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 8px;
-        }
+    <a href="/convert" class="tool-card">
+        <div class="tool-icon">&#8644;</div>
+        <h3>Format Converter</h3>
+        <p>Convert between audio and video formats. MP3, WAV, FLAC, AAC, OGG, MP4, WebM, and more.</p>
+    </a>
 
-        h1 {
-            font-size: 2rem;
-            font-weight: 700;
-            background: linear-gradient(135deg, #ff4e50, #fc466b, #7b2ff7);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-        }
+    <a href="/compress" class="tool-card">
+        <div class="tool-icon">&#9660;</div>
+        <h3>Video Compressor</h3>
+        <p>Reduce video file size while keeping quality. Perfect for sharing on social media or email.</p>
+    </a>
 
-        .theme-toggle {
-            background: var(--surface);
-            border: 1px solid var(--border);
-            border-radius: 8px;
-            padding: 8px 10px;
-            cursor: pointer;
-            font-size: 1.1rem;
-            line-height: 1;
-            transition: background 0.2s;
-        }
-        .theme-toggle:hover { opacity: 0.8; }
+    <a href="/trim" class="tool-card">
+        <div class="tool-icon">&#9986;</div>
+        <h3>Audio Trimmer</h3>
+        <p>Cut and trim audio files. Set start and end times to extract the exact clip you need.</p>
+    </a>
 
-        .subtitle {
-            color: var(--text-muted);
-            margin-bottom: 24px;
-            font-size: 0.9rem;
-        }
+</div>
 
-        .input-group {
-            display: flex;
-            gap: 10px;
-            margin-bottom: 16px;
-        }
-
-        input[type="text"], textarea {
-            flex: 1;
-            padding: 14px 18px;
-            border: 2px solid var(--border);
-            border-radius: 12px;
-            background: var(--input-bg);
-            color: var(--text);
-            font-size: 1rem;
-            font-family: inherit;
-            outline: none;
-            transition: border-color 0.2s;
-        }
-        input[type="text"]:focus, textarea:focus { border-color: #7b2ff7; }
-        input::placeholder, textarea::placeholder { color: var(--text-muted); }
-
-        textarea {
-            width: 100%;
-            min-height: 80px;
-            resize: vertical;
-            margin-bottom: 16px;
-            display: none;
-        }
-        textarea.visible { display: block; }
-
-        .controls {
-            display: flex;
-            gap: 10px;
-            margin-bottom: 16px;
-            flex-wrap: wrap;
-            align-items: center;
-        }
-
-        .format-toggle {
-            display: flex;
-            background: var(--surface);
-            border: 1px solid var(--border);
-            border-radius: 10px;
-            overflow: hidden;
-        }
-
-        .format-btn {
-            padding: 10px 20px;
-            border: none;
-            background: transparent;
-            color: var(--text-dim);
-            font-size: 0.9rem;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.2s;
-        }
-        .format-btn.active {
-            background: linear-gradient(135deg, #7b2ff7, #fc466b);
-            color: white;
-        }
-
-        select {
-            padding: 10px 14px;
-            border: 1px solid var(--border);
-            border-radius: 10px;
-            background: var(--surface);
-            color: var(--text);
-            font-size: 0.9rem;
-            outline: none;
-            cursor: pointer;
-        }
-
-        .batch-toggle {
-            margin-left: auto;
-            padding: 10px 14px;
-            border: 1px solid var(--border);
-            border-radius: 10px;
-            background: var(--surface);
-            color: var(--text-dim);
-            font-size: 0.85rem;
-            cursor: pointer;
-            transition: all 0.2s;
-        }
-        .batch-toggle.active {
-            border-color: #7b2ff7;
-            color: #7b2ff7;
-        }
-
-        .primary-btn {
-            padding: 14px 28px;
-            border: none;
-            border-radius: 12px;
-            background: linear-gradient(135deg, #7b2ff7, #fc466b);
-            color: white;
-            font-size: 1rem;
-            font-weight: 600;
-            cursor: pointer;
-            transition: opacity 0.2s, transform 0.1s;
-            white-space: nowrap;
-        }
-        .primary-btn:hover { opacity: 0.9; }
-        .primary-btn:active { transform: scale(0.97); }
-        .primary-btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
-
-        /* Preview card */
-        .preview-card {
-            display: none;
-            background: var(--surface);
-            border: 1px solid var(--border);
-            border-radius: 14px;
-            padding: 16px;
-            margin-bottom: 16px;
-            gap: 16px;
-            align-items: center;
-        }
-        .preview-card.visible { display: flex; }
-
-        .preview-thumb {
-            width: 140px;
-            height: 79px;
-            border-radius: 8px;
-            object-fit: cover;
-            flex-shrink: 0;
-        }
-
-        .preview-info {
-            flex: 1;
-            min-width: 0;
-        }
-
-        .preview-title {
-            font-weight: 600;
-            font-size: 0.95rem;
-            margin-bottom: 4px;
-            overflow: hidden;
-            text-overflow: ellipsis;
-            display: -webkit-box;
-            -webkit-line-clamp: 2;
-            -webkit-box-orient: vertical;
-        }
-
-        .preview-channel {
-            font-size: 0.8rem;
-            color: var(--text-dim);
-            margin-bottom: 4px;
-        }
-
-        .preview-duration {
-            font-size: 0.8rem;
-            color: var(--text-muted);
-        }
-
-        /* Status cards */
-        .jobs-container { display: flex; flex-direction: column; gap: 10px; }
-
-        .status-card {
-            background: var(--surface);
-            border: 1px solid var(--border);
-            border-radius: 14px;
-            padding: 20px;
-        }
-
-        .song-title {
-            font-weight: 600;
-            font-size: 1rem;
-            margin-bottom: 12px;
-            word-break: break-word;
-        }
-
-        .progress-bar {
-            width: 100%;
-            height: 6px;
-            background: var(--border);
-            border-radius: 3px;
-            overflow: hidden;
-            margin-bottom: 8px;
-        }
-
-        .progress-fill {
-            height: 100%;
-            width: 0%;
-            background: linear-gradient(90deg, #7b2ff7, #fc466b);
-            border-radius: 3px;
-            transition: width 0.3s ease;
-        }
-
-        .status-text {
-            font-size: 0.82rem;
-            color: var(--text-dim);
-        }
-
-        .download-btn {
-            display: inline-block;
-            margin-top: 14px;
-            text-decoration: none;
-            padding: 10px 28px;
-            border-radius: 10px;
-            background: linear-gradient(135deg, #00c853, #00e676);
-            color: #000;
-            font-weight: 600;
-            font-size: 0.9rem;
-            transition: opacity 0.2s;
-        }
-        .download-btn:hover { opacity: 0.85; }
-
-        .error { color: #ff4e50; font-size: 0.85rem; margin-top: 10px; }
-
-        .history {
-            margin-top: 28px;
-        }
-
-        .history h3 {
-            font-size: 0.8rem;
-            color: var(--text-muted);
-            text-transform: uppercase;
-            letter-spacing: 1px;
-            margin-bottom: 10px;
-        }
-
-        .history-item {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 10px 14px;
-            background: var(--surface);
-            border-radius: 8px;
-            margin-bottom: 5px;
-            font-size: 0.85rem;
-        }
-        .history-item span { color: var(--text-muted); font-size: 0.8rem; }
-
-        @media (max-width: 500px) {
-            .preview-card { flex-direction: column; }
-            .preview-thumb { width: 100%; height: auto; aspect-ratio: 16/9; }
-            .controls { gap: 8px; }
-            .batch-toggle { margin-left: 0; }
-        }
-    </style>
-</head>
-<body>
-    <div class="container">
-        <div class="header">
-            <h1>YT / TikTok Converter</h1>
-            <button class="theme-toggle" onclick="toggleTheme()" title="Toggle theme">
-                <span id="themeIcon">&#9790;</span>
-            </button>
-        </div>
-        <p class="subtitle">YouTube or TikTok to MP3 / MP4 - paste a link, pick your format</p>
-
-        <div class="controls">
-            <div class="format-toggle">
-                <button class="format-btn active" data-fmt="mp3" onclick="setFormat('mp3')">MP3</button>
-                <button class="format-btn" data-fmt="m4a" onclick="setFormat('m4a')">M4A</button>
-                <button class="format-btn" data-fmt="mp4" onclick="setFormat('mp4')">MP4</button>
-            </div>
-            <select id="qualitySelect">
-                <option value="128">128 kbps</option>
-                <option value="192" selected>192 kbps</option>
-                <option value="256">256 kbps</option>
-                <option value="320">320 kbps</option>
-            </select>
-            <button class="batch-toggle" onclick="toggleBatch()">Batch mode</button>
-        </div>
-
-        <div class="input-group">
-            <input type="text" id="url" placeholder="Paste a YouTube or TikTok URL..." autofocus>
-            <button class="primary-btn" id="convertBtn" onclick="convert()">Convert</button>
-        </div>
-
-        <textarea id="batchUrls" placeholder="Paste multiple YouTube or TikTok URLs, one per line (max 10)..."></textarea>
-
-        <div class="preview-card" id="previewCard">
-            <img class="preview-thumb" id="previewThumb" src="" alt="">
-            <div class="preview-info">
-                <div class="preview-title" id="previewTitle"></div>
-                <div class="preview-channel" id="previewChannel"></div>
-                <div class="preview-duration" id="previewDuration"></div>
-            </div>
-        </div>
-
-        <div class="jobs-container" id="jobsContainer"></div>
-
-        <div class="history" id="history" style="display:none">
-            <h3>Recent</h3>
-            <div id="historyList"></div>
-        </div>
-    </div>
-
-    <script>
-        let currentFormat = 'mp3';
-        let batchMode = false;
-        let previewTimeout = null;
-
-        const audioQualities = [
-            { value: '128', label: '128 kbps' },
-            { value: '192', label: '192 kbps' },
-            { value: '256', label: '256 kbps' },
-            { value: '320', label: '320 kbps' },
-        ];
-        const videoQualities = [
-            { value: '360p', label: '360p' },
-            { value: '480p', label: '480p' },
-            { value: '720p', label: '720p HD' },
-            { value: '1080p', label: '1080p Full HD' },
-        ];
-
-        function setFormat(fmt) {
-            currentFormat = fmt;
-            document.querySelectorAll('.format-btn').forEach(b => {
-                b.classList.toggle('active', b.dataset.fmt === fmt);
-            });
-            const sel = document.getElementById('qualitySelect');
-            if (fmt === 'm4a') {
-                sel.innerHTML = '<option value="best">Best (no conversion)</option>';
-                sel.disabled = true;
-            } else {
-                sel.disabled = false;
-                const opts = fmt === 'mp4' ? videoQualities : audioQualities;
-                sel.innerHTML = opts.map((o, i) =>
-                    `<option value="${o.value}" ${i === (fmt === 'mp4' ? 2 : 1) ? 'selected' : ''}>${o.label}</option>`
-                ).join('');
-            }
-        }
-
-        function toggleBatch() {
-            batchMode = !batchMode;
-            document.querySelector('.batch-toggle').classList.toggle('active', batchMode);
-            document.getElementById('batchUrls').classList.toggle('visible', batchMode);
-            document.getElementById('url').placeholder = batchMode
-                ? 'Or type a single URL here...'
-                : 'Paste a YouTube or TikTok URL...';
-        }
-
-        function toggleTheme() {
-            const html = document.documentElement;
-            const current = html.getAttribute('data-theme');
-            const next = current === 'dark' ? 'light' : 'dark';
-            html.setAttribute('data-theme', next);
-            document.getElementById('themeIcon').innerHTML = next === 'dark' ? '&#9790;' : '&#9788;';
-            localStorage.setItem('theme', next);
-        }
-
-        (function initTheme() {
-            const saved = localStorage.getItem('theme');
-            if (saved) {
-                document.documentElement.setAttribute('data-theme', saved);
-                document.getElementById('themeIcon').innerHTML = saved === 'dark' ? '&#9790;' : '&#9788;';
-            }
-        })();
-
-        // Preview on paste / typing
-        const urlInput = document.getElementById('url');
-        urlInput.addEventListener('input', () => {
-            clearTimeout(previewTimeout);
-            previewTimeout = setTimeout(loadPreview, 600);
-        });
-        urlInput.addEventListener('keydown', e => {
-            if (e.key === 'Enter') convert();
-        });
-
-        async function loadPreview() {
-            const url = urlInput.value.trim();
-            const card = document.getElementById('previewCard');
-            if (!url || (!url.includes('youtube.com') && !url.includes('youtu.be') && !url.includes('tiktok.com'))) {
-                card.classList.remove('visible');
-                return;
-            }
-            try {
-                const res = await fetch('/preview', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ url })
-                });
-                const data = await res.json();
-                if (data.error) { card.classList.remove('visible'); return; }
-
-                document.getElementById('previewThumb').src = data.thumbnail;
-                document.getElementById('previewTitle').textContent = data.title;
-                document.getElementById('previewChannel').textContent = data.channel;
-                const mins = Math.floor(data.duration / 60);
-                const secs = data.duration % 60;
-                document.getElementById('previewDuration').textContent = `${mins}:${String(secs).padStart(2, '0')}`;
-                card.classList.add('visible');
-            } catch {
-                card.classList.remove('visible');
-            }
-        }
-
-        function formatDuration(s) {
-            const m = Math.floor(s / 60);
-            return `${m}:${String(s % 60).padStart(2, '0')}`;
-        }
-
-        async function convert() {
-            const quality = document.getElementById('qualitySelect').value;
-            const btn = document.getElementById('convertBtn');
-
-            let urls = [];
-            if (batchMode) {
-                const batchText = document.getElementById('batchUrls').value.trim();
-                urls = batchText.split('\n').map(u => u.trim()).filter(Boolean);
-            }
-            const singleUrl = urlInput.value.trim();
-            if (singleUrl && !urls.includes(singleUrl)) urls.unshift(singleUrl);
-
-            if (urls.length === 0) return;
-
-            btn.disabled = true;
-            btn.textContent = 'Working...';
-
-            try {
-                if (urls.length === 1) {
-                    const res = await fetch('/convert', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ url: urls[0], format: currentFormat, quality })
-                    });
-                    const data = await res.json();
-                    if (data.error) throw new Error(data.error);
-                    addJobCard(data.job_id);
-                    pollStatus(data.job_id);
-                } else {
-                    const res = await fetch('/batch', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ urls, format: currentFormat, quality })
-                    });
-                    const data = await res.json();
-                    if (data.error) throw new Error(data.error);
-                    data.job_ids.forEach(id => {
-                        addJobCard(id);
-                        pollStatus(id);
-                    });
-                }
-            } catch (err) {
-                alert(err.message);
-            }
-
-            btn.disabled = false;
-            btn.textContent = 'Convert';
-        }
-
-        function addJobCard(jobId) {
-            const container = document.getElementById('jobsContainer');
-            const card = document.createElement('div');
-            card.className = 'status-card';
-            card.id = `job-${jobId}`;
-            card.innerHTML = `
-                <div class="song-title" id="title-${jobId}">Fetching video info...</div>
-                <div class="progress-bar"><div class="progress-fill" id="progress-${jobId}"></div></div>
-                <div class="status-text" id="status-${jobId}">Starting...</div>
-                <div id="dl-${jobId}"></div>
-                <div class="error" id="err-${jobId}"></div>
-            `;
-            container.prepend(card);
-        }
-
-        function pollStatus(jobId) {
-            const interval = setInterval(async () => {
-                try {
-                    const res = await fetch(`/status/${jobId}`);
-                    const job = await res.json();
-
-                    const title = document.getElementById(`title-${jobId}`);
-                    const progress = document.getElementById(`progress-${jobId}`);
-                    const status = document.getElementById(`status-${jobId}`);
-                    const dl = document.getElementById(`dl-${jobId}`);
-                    const err = document.getElementById(`err-${jobId}`);
-
-                    if (job.title && title) title.textContent = job.title;
-                    if (progress) progress.style.width = job.progress + '%';
-
-                    if (job.status === 'downloading') {
-                        status.textContent = `Downloading... ${job.progress}%`;
-                    } else if (job.status === 'converting') {
-                        status.textContent = `Converting to ${job.format.toUpperCase()}...`;
-                    } else if (job.status === 'done') {
-                        clearInterval(interval);
-                        status.textContent = 'Ready!';
-                        dl.innerHTML = `<a class="download-btn" href="/download/${jobId}">Download ${job.format.toUpperCase()}</a>`;
-                        addToHistory(job.title, job.format);
-                    } else if (job.status === 'error') {
-                        clearInterval(interval);
-                        status.textContent = 'Failed';
-                        err.textContent = job.error;
-                        progress.style.width = '0%';
-                    }
-                } catch {
-                    clearInterval(interval);
-                }
-            }, 800);
-        }
-
-        function addToHistory(title, fmt) {
-            const historyDiv = document.getElementById('history');
-            const list = document.getElementById('historyList');
-            historyDiv.style.display = 'block';
-            const item = document.createElement('div');
-            item.className = 'history-item';
-            item.innerHTML = `${title} <span>${fmt.toUpperCase()} - just now</span>`;
-            list.prepend(item);
-            if (list.children.length > 10) list.removeChild(list.lastChild);
-        }
-    </script>
-</body>
-</html>
+<style>
+    .tool-card {
+        display: block;
+        text-decoration: none;
+        color: var(--text);
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: 16px;
+        padding: 28px 24px;
+        transition: transform 0.2s, border-color 0.2s, box-shadow 0.2s;
+    }
+    .tool-card:hover {
+        transform: translateY(-3px);
+        border-color: #7b2ff7;
+        box-shadow: 0 8px 24px rgba(123, 47, 247, 0.1);
+    }
+    .tool-icon {
+        font-size: 2rem;
+        margin-bottom: 12px;
+    }
+    .tool-card h3 {
+        font-size: 1.1rem;
+        margin-bottom: 8px;
+        font-weight: 600;
+    }
+    .tool-card p {
+        color: var(--text-dim);
+        font-size: 0.85rem;
+        line-height: 1.5;
+    }
+</style>
+{% endblock %}

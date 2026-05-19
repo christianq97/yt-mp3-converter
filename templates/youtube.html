@@ -1,0 +1,171 @@
+{% extends "base.html" %}
+{% set active = "youtube" %}
+{% block title %}YouTube & TikTok to MP3/MP4 - MediaToolbox{% endblock %}
+{% block description %}Download YouTube and TikTok videos as MP3, M4A, or MP4. Choose quality and bitrate.{% endblock %}
+
+{% block content %}
+<h1 class="page-title">YT / TikTok Downloader</h1>
+<p class="page-subtitle">Paste a YouTube or TikTok URL, pick your format and quality</p>
+
+<div class="controls-row">
+    <div class="format-toggle">
+        <button class="format-btn active" data-fmt="mp3" onclick="setFormat('mp3')">MP3</button>
+        <button class="format-btn" data-fmt="m4a" onclick="setFormat('m4a')">M4A</button>
+        <button class="format-btn" data-fmt="mp4" onclick="setFormat('mp4')">MP4</button>
+    </div>
+    <select id="qualitySelect">
+        <option value="128">128 kbps</option>
+        <option value="192" selected>192 kbps</option>
+        <option value="256">256 kbps</option>
+        <option value="320">320 kbps</option>
+    </select>
+    <button class="batch-toggle" onclick="toggleBatch()" style="margin-left:auto; padding:10px 14px; border:1px solid var(--border); border-radius:10px; background:var(--surface); color:var(--text-dim); font-size:0.85rem; cursor:pointer;">Batch mode</button>
+</div>
+
+<div class="controls-row">
+    <input type="text" id="url" placeholder="Paste a YouTube or TikTok URL..." style="flex:1" autofocus>
+    <button class="btn-primary" id="convertBtn" onclick="convert()">Convert</button>
+</div>
+
+<textarea id="batchUrls" placeholder="Paste multiple URLs, one per line (max 10)..." style="width:100%; min-height:80px; resize:vertical; display:none; margin-bottom:16px;"></textarea>
+
+<div class="preview-card card" id="previewCard" style="display:none; flex-direction:row; gap:16px; align-items:center;">
+    <img id="previewThumb" src="" style="width:140px; height:79px; border-radius:8px; object-fit:cover; flex-shrink:0;">
+    <div style="flex:1; min-width:0;">
+        <div id="previewTitle" style="font-weight:600; font-size:0.95rem; margin-bottom:4px;"></div>
+        <div id="previewChannel" style="font-size:0.8rem; color:var(--text-dim); margin-bottom:4px;"></div>
+        <div id="previewDuration" style="font-size:0.8rem; color:var(--text-muted);"></div>
+    </div>
+</div>
+
+<div id="jobsContainer"></div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    let currentFormat = 'mp3';
+    let batchMode = false;
+    let previewTimeout = null;
+
+    const audioQualities = [
+        { value: '128', label: '128 kbps' },
+        { value: '192', label: '192 kbps' },
+        { value: '256', label: '256 kbps' },
+        { value: '320', label: '320 kbps' },
+    ];
+    const videoQualities = [
+        { value: '360p', label: '360p' },
+        { value: '480p', label: '480p' },
+        { value: '720p', label: '720p HD' },
+        { value: '1080p', label: '1080p Full HD' },
+    ];
+
+    function setFormat(fmt) {
+        currentFormat = fmt;
+        document.querySelectorAll('.format-btn').forEach(b => b.classList.toggle('active', b.dataset.fmt === fmt));
+        const sel = document.getElementById('qualitySelect');
+        if (fmt === 'm4a') {
+            sel.innerHTML = '<option value="best">Best (no conversion)</option>';
+            sel.disabled = true;
+        } else {
+            sel.disabled = false;
+            const opts = fmt === 'mp4' ? videoQualities : audioQualities;
+            sel.innerHTML = opts.map((o, i) =>
+                `<option value="${o.value}" ${i === (fmt === 'mp4' ? 2 : 1) ? 'selected' : ''}>${o.label}</option>`
+            ).join('');
+        }
+    }
+
+    function toggleBatch() {
+        batchMode = !batchMode;
+        const btn = document.querySelector('.batch-toggle');
+        const ta = document.getElementById('batchUrls');
+        btn.style.borderColor = batchMode ? '#7b2ff7' : '';
+        btn.style.color = batchMode ? '#7b2ff7' : '';
+        ta.style.display = batchMode ? 'block' : 'none';
+    }
+
+    const urlInput = document.getElementById('url');
+    urlInput.addEventListener('input', () => { clearTimeout(previewTimeout); previewTimeout = setTimeout(loadPreview, 600); });
+    urlInput.addEventListener('keydown', e => { if (e.key === 'Enter') convert(); });
+
+    async function loadPreview() {
+        const url = urlInput.value.trim();
+        const card = document.getElementById('previewCard');
+        if (!url || (!url.includes('youtube.com') && !url.includes('youtu.be') && !url.includes('tiktok.com'))) {
+            card.style.display = 'none'; return;
+        }
+        try {
+            const res = await fetch('/api/preview', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({url}) });
+            const data = await res.json();
+            if (data.error) { card.style.display = 'none'; return; }
+            document.getElementById('previewThumb').src = data.thumbnail;
+            document.getElementById('previewTitle').textContent = data.title;
+            document.getElementById('previewChannel').textContent = data.channel;
+            const m = Math.floor(data.duration / 60), s = data.duration % 60;
+            document.getElementById('previewDuration').textContent = `${m}:${String(s).padStart(2, '0')}`;
+            card.style.display = 'flex';
+        } catch { card.style.display = 'none'; }
+    }
+
+    async function convert() {
+        const quality = document.getElementById('qualitySelect').value;
+        const btn = document.getElementById('convertBtn');
+        let urls = [];
+        if (batchMode) urls = document.getElementById('batchUrls').value.trim().split('\n').map(u => u.trim()).filter(Boolean);
+        const single = urlInput.value.trim();
+        if (single && !urls.includes(single)) urls.unshift(single);
+        if (!urls.length) return;
+
+        btn.disabled = true; btn.textContent = 'Working...';
+        try {
+            if (urls.length === 1) {
+                const res = await fetch('/api/yt/convert', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({url:urls[0], format:currentFormat, quality}) });
+                const data = await res.json();
+                if (data.error) throw new Error(data.error);
+                addJobCard(data.job_id); pollStatus(data.job_id);
+            } else {
+                const res = await fetch('/api/yt/batch', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({urls, format:currentFormat, quality}) });
+                const data = await res.json();
+                if (data.error) throw new Error(data.error);
+                data.job_ids.forEach(id => { addJobCard(id); pollStatus(id); });
+            }
+        } catch (err) { alert(err.message); }
+        btn.disabled = false; btn.textContent = 'Convert';
+    }
+
+    function addJobCard(jobId) {
+        const c = document.getElementById('jobsContainer');
+        const d = document.createElement('div');
+        d.className = 'card'; d.id = `job-${jobId}`;
+        d.innerHTML = `<div style="font-weight:600;margin-bottom:10px" id="title-${jobId}">Fetching info...</div>
+            <div class="progress-bar"><div class="progress-fill" id="progress-${jobId}"></div></div>
+            <div style="font-size:0.82rem;color:var(--text-dim)" id="status-${jobId}">Starting...</div>
+            <div id="dl-${jobId}"></div><div class="error" id="err-${jobId}"></div>`;
+        c.prepend(d);
+    }
+
+    function pollStatus(jobId) {
+        const iv = setInterval(async () => {
+            try {
+                const res = await fetch(`/api/status/${jobId}`);
+                const job = await res.json();
+                const t = document.getElementById(`title-${jobId}`);
+                const p = document.getElementById(`progress-${jobId}`);
+                const s = document.getElementById(`status-${jobId}`);
+                if (job.title && t) t.textContent = job.title;
+                if (p) p.style.width = job.progress + '%';
+                if (job.status === 'downloading') s.textContent = `Downloading... ${job.progress}%`;
+                else if (job.status === 'converting') s.textContent = `Converting to ${(job.format||'').toUpperCase()}...`;
+                else if (job.status === 'done') {
+                    clearInterval(iv); s.textContent = 'Ready!';
+                    document.getElementById(`dl-${jobId}`).innerHTML = `<a class="btn-success" href="/api/download/${jobId}" style="display:inline-block;margin-top:12px">Download ${(job.format||'').toUpperCase()}</a>`;
+                } else if (job.status === 'error') {
+                    clearInterval(iv); s.textContent = 'Failed';
+                    document.getElementById(`err-${jobId}`).textContent = job.error; p.style.width = '0%';
+                }
+            } catch { clearInterval(iv); }
+        }, 800);
+    }
+</script>
+{% endblock %}

@@ -1,0 +1,326 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}MediaToolbox{% endblock %}</title>
+    <meta name="description" content="{% block description %}Free online media tools - convert, compress, trim audio and video files{% endblock %}">
+    <style>
+        :root[data-theme="dark"] {
+            --bg: #0a0a0a;
+            --bg2: #0f0f0f;
+            --surface: #1a1a1a;
+            --border: #2a2a2a;
+            --text: #e1e1e1;
+            --text-muted: #666;
+            --text-dim: #888;
+            --input-bg: #1a1a1a;
+            --nav-bg: #111;
+        }
+        :root[data-theme="light"] {
+            --bg: #f0f0f0;
+            --bg2: #f5f5f5;
+            --surface: #ffffff;
+            --border: #e0e0e0;
+            --text: #1a1a1a;
+            --text-muted: #999;
+            --text-dim: #777;
+            --input-bg: #ffffff;
+            --nav-bg: #fff;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            background: var(--bg2);
+            color: var(--text);
+            min-height: 100vh;
+            transition: background 0.3s, color 0.3s;
+        }
+
+        nav {
+            background: var(--nav-bg);
+            border-bottom: 1px solid var(--border);
+            padding: 0 24px;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        .nav-inner {
+            max-width: 1100px;
+            margin: 0 auto;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            height: 56px;
+        }
+
+        .nav-logo {
+            font-size: 1.2rem;
+            font-weight: 700;
+            text-decoration: none;
+            background: linear-gradient(135deg, #ff4e50, #fc466b, #7b2ff7);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .nav-links {
+            display: flex;
+            gap: 6px;
+            list-style: none;
+            overflow-x: auto;
+        }
+
+        .nav-links a {
+            text-decoration: none;
+            color: var(--text-dim);
+            font-size: 0.85rem;
+            font-weight: 500;
+            padding: 8px 14px;
+            border-radius: 8px;
+            transition: all 0.2s;
+            white-space: nowrap;
+        }
+        .nav-links a:hover { background: var(--surface); color: var(--text); }
+        .nav-links a.active { background: var(--surface); color: var(--text); }
+
+        .nav-right {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .theme-toggle {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 6px 8px;
+            cursor: pointer;
+            font-size: 1rem;
+            line-height: 1;
+        }
+
+        .main-content {
+            max-width: 700px;
+            margin: 0 auto;
+            padding: 32px 20px;
+        }
+
+        .ad-slot {
+            background: var(--surface);
+            border: 1px dashed var(--border);
+            border-radius: 10px;
+            padding: 16px;
+            text-align: center;
+            color: var(--text-muted);
+            font-size: 0.75rem;
+            margin: 24px auto;
+            max-width: 728px;
+        }
+
+        .page-title {
+            font-size: 1.8rem;
+            font-weight: 700;
+            margin-bottom: 6px;
+        }
+
+        .page-subtitle {
+            color: var(--text-muted);
+            margin-bottom: 28px;
+            font-size: 0.95rem;
+        }
+
+        .card {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 14px;
+            padding: 20px;
+            margin-bottom: 12px;
+        }
+
+        input[type="text"], textarea, select {
+            padding: 12px 16px;
+            border: 2px solid var(--border);
+            border-radius: 10px;
+            background: var(--input-bg);
+            color: var(--text);
+            font-size: 0.95rem;
+            font-family: inherit;
+            outline: none;
+            transition: border-color 0.2s;
+        }
+        input[type="text"]:focus, textarea:focus { border-color: #7b2ff7; }
+        input::placeholder, textarea::placeholder { color: var(--text-muted); }
+
+        .btn-primary {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 10px;
+            background: linear-gradient(135deg, #7b2ff7, #fc466b);
+            color: white;
+            font-size: 0.95rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: opacity 0.2s, transform 0.1s;
+        }
+        .btn-primary:hover { opacity: 0.9; }
+        .btn-primary:active { transform: scale(0.97); }
+        .btn-primary:disabled { opacity: 0.5; cursor: not-allowed; }
+
+        .btn-success {
+            display: inline-block;
+            text-decoration: none;
+            padding: 10px 28px;
+            border-radius: 10px;
+            background: linear-gradient(135deg, #00c853, #00e676);
+            color: #000;
+            font-weight: 600;
+            font-size: 0.9rem;
+            border: none;
+            cursor: pointer;
+        }
+        .btn-success:hover { opacity: 0.85; }
+
+        .progress-bar {
+            width: 100%;
+            height: 6px;
+            background: var(--border);
+            border-radius: 3px;
+            overflow: hidden;
+            margin-bottom: 8px;
+        }
+
+        .progress-fill {
+            height: 100%;
+            width: 0%;
+            background: linear-gradient(90deg, #7b2ff7, #fc466b);
+            border-radius: 3px;
+            transition: width 0.3s ease;
+        }
+
+        .upload-zone {
+            border: 2px dashed var(--border);
+            border-radius: 14px;
+            padding: 40px 20px;
+            text-align: center;
+            cursor: pointer;
+            transition: border-color 0.2s, background 0.2s;
+            margin-bottom: 16px;
+        }
+        .upload-zone:hover, .upload-zone.dragover {
+            border-color: #7b2ff7;
+            background: rgba(123, 47, 247, 0.05);
+        }
+        .upload-zone p { color: var(--text-muted); font-size: 0.9rem; margin-top: 8px; }
+        .upload-zone .icon { font-size: 2rem; margin-bottom: 4px; }
+        .upload-zone input { display: none; }
+
+        .file-info {
+            font-size: 0.85rem;
+            color: var(--text-dim);
+            margin-bottom: 16px;
+        }
+
+        .controls-row {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 16px;
+            flex-wrap: wrap;
+            align-items: center;
+        }
+
+        .format-toggle {
+            display: flex;
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            overflow: hidden;
+        }
+
+        .format-btn {
+            padding: 10px 18px;
+            border: none;
+            background: transparent;
+            color: var(--text-dim);
+            font-size: 0.85rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .format-btn.active {
+            background: linear-gradient(135deg, #7b2ff7, #fc466b);
+            color: white;
+        }
+
+        select {
+            cursor: pointer;
+        }
+
+        .error { color: #ff4e50; font-size: 0.85rem; margin-top: 10px; }
+
+        footer {
+            text-align: center;
+            padding: 32px 20px;
+            color: var(--text-muted);
+            font-size: 0.8rem;
+        }
+
+        @media (max-width: 600px) {
+            .nav-links { gap: 2px; }
+            .nav-links a { padding: 8px 10px; font-size: 0.8rem; }
+            .main-content { padding: 20px 16px; }
+            .page-title { font-size: 1.4rem; }
+        }
+    </style>
+</head>
+<body>
+    <nav>
+        <div class="nav-inner">
+            <a href="/" class="nav-logo">MediaToolbox</a>
+            <ul class="nav-links">
+                <li><a href="/youtube" {% if active=='youtube' %}class="active"{% endif %}>YT/TikTok</a></li>
+                <li><a href="/convert" {% if active=='convert' %}class="active"{% endif %}>Converter</a></li>
+                <li><a href="/compress" {% if active=='compress' %}class="active"{% endif %}>Compressor</a></li>
+                <li><a href="/trim" {% if active=='trim' %}class="active"{% endif %}>Trimmer</a></li>
+            </ul>
+            <div class="nav-right">
+                <button class="theme-toggle" onclick="toggleTheme()" title="Toggle theme">
+                    <span id="themeIcon">&#9790;</span>
+                </button>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Top ad slot -->
+    <div class="ad-slot" id="ad-top">Ad Space - 728x90</div>
+
+    <div class="main-content">
+        {% block content %}{% endblock %}
+    </div>
+
+    <!-- Bottom ad slot -->
+    <div class="ad-slot" id="ad-bottom">Ad Space - 728x90</div>
+
+    <footer>MediaToolbox &mdash; Free online media tools</footer>
+
+    <script>
+        function toggleTheme() {
+            const html = document.documentElement;
+            const next = html.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
+            html.setAttribute('data-theme', next);
+            document.getElementById('themeIcon').innerHTML = next === 'dark' ? '&#9790;' : '&#9788;';
+            localStorage.setItem('theme', next);
+        }
+        (function() {
+            const saved = localStorage.getItem('theme');
+            if (saved) {
+                document.documentElement.setAttribute('data-theme', saved);
+                document.getElementById('themeIcon').innerHTML = saved === 'dark' ? '&#9790;' : '&#9788;';
+            }
+        })();
+    </script>
+    {% block scripts %}{% endblock %}
+</body>
+</html>

@@ -1,0 +1,163 @@
+{% extends "base.html" %}
+{% set active = "convert" %}
+{% block title %}Audio & Video Format Converter - MediaToolbox{% endblock %}
+{% block description %}Convert between audio and video formats online. MP3, WAV, FLAC, AAC, OGG, MP4, WebM and more.{% endblock %}
+
+{% block content %}
+<h1 class="page-title">Format Converter</h1>
+<p class="page-subtitle">Upload a file and convert it to any format</p>
+
+<div class="upload-zone" id="dropZone" onclick="document.getElementById('fileInput').click()">
+    <div class="icon">&#128193;</div>
+    <p>Drop a file here or click to upload</p>
+    <p style="font-size:0.75rem; margin-top:4px;">Max 500MB - Audio or Video</p>
+    <input type="file" id="fileInput" accept="audio/*,video/*">
+</div>
+
+<div class="file-info" id="fileInfo" style="display:none">
+    <strong id="fileName"></strong> &mdash; <span id="fileSize"></span>
+</div>
+
+<div class="controls-row">
+    <select id="outputFormat" style="flex:1">
+        <optgroup label="Audio">
+            <option value="mp3" selected>MP3</option>
+            <option value="wav">WAV</option>
+            <option value="flac">FLAC</option>
+            <option value="aac">AAC</option>
+            <option value="ogg">OGG</option>
+            <option value="m4a">M4A</option>
+            <option value="wma">WMA</option>
+        </optgroup>
+        <optgroup label="Video">
+            <option value="mp4">MP4</option>
+            <option value="webm">WebM</option>
+            <option value="avi">AVI</option>
+            <option value="mov">MOV</option>
+            <option value="mkv">MKV</option>
+        </optgroup>
+    </select>
+    <select id="qualitySelect">
+        <option value="low">Low (fast)</option>
+        <option value="medium" selected>Medium</option>
+        <option value="high">High (slow)</option>
+    </select>
+    <button class="btn-primary" id="convertBtn" onclick="startConvert()" disabled>Convert</button>
+</div>
+
+<div class="card" id="statusCard" style="display:none">
+    <div style="font-weight:600; margin-bottom:10px" id="statusTitle">Converting...</div>
+    <div class="progress-bar"><div class="progress-fill" id="progressFill"></div></div>
+    <div style="font-size:0.82rem; color:var(--text-dim)" id="statusText">Uploading...</div>
+    <div id="downloadArea"></div>
+    <div class="error" id="errorText"></div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    let selectedFile = null;
+    const dropZone = document.getElementById('dropZone');
+    const fileInput = document.getElementById('fileInput');
+
+    ['dragenter','dragover'].forEach(e => dropZone.addEventListener(e, ev => { ev.preventDefault(); dropZone.classList.add('dragover'); }));
+    ['dragleave','drop'].forEach(e => dropZone.addEventListener(e, ev => { ev.preventDefault(); dropZone.classList.remove('dragover'); }));
+    dropZone.addEventListener('drop', e => { if (e.dataTransfer.files.length) handleFile(e.dataTransfer.files[0]); });
+    fileInput.addEventListener('change', () => { if (fileInput.files.length) handleFile(fileInput.files[0]); });
+
+    function handleFile(file) {
+        selectedFile = file;
+        document.getElementById('fileName').textContent = file.name;
+        document.getElementById('fileSize').textContent = formatSize(file.size);
+        document.getElementById('fileInfo').style.display = 'block';
+        document.getElementById('convertBtn').disabled = false;
+    }
+
+    function formatSize(bytes) {
+        if (bytes < 1024) return bytes + ' B';
+        if (bytes < 1048576) return (bytes/1024).toFixed(1) + ' KB';
+        return (bytes/1048576).toFixed(1) + ' MB';
+    }
+
+    async function startConvert() {
+        if (!selectedFile) return;
+        const fmt = document.getElementById('outputFormat').value;
+        const quality = document.getElementById('qualitySelect').value;
+        const btn = document.getElementById('convertBtn');
+        const card = document.getElementById('statusCard');
+
+        btn.disabled = true; btn.textContent = 'Working...';
+        card.style.display = 'block';
+        document.getElementById('statusTitle').textContent = `Converting to ${fmt.toUpperCase()}...`;
+        document.getElementById('progressFill').style.width = '0%';
+        document.getElementById('statusText').textContent = 'Uploading...';
+        document.getElementById('downloadArea').innerHTML = '';
+        document.getElementById('errorText').textContent = '';
+
+        const formData = new FormData();
+        formData.append('file', selectedFile);
+        formData.append('format', fmt);
+        formData.append('quality', quality);
+
+        try {
+            const xhr = new XMLHttpRequest();
+            xhr.upload.addEventListener('progress', e => {
+                if (e.lengthComputable) {
+                    const pct = Math.round(e.loaded / e.total * 50);
+                    document.getElementById('progressFill').style.width = pct + '%';
+                    document.getElementById('statusText').textContent = `Uploading... ${pct * 2}%`;
+                }
+            });
+
+            xhr.onload = function() {
+                if (xhr.status === 200) {
+                    const data = JSON.parse(xhr.responseText);
+                    if (data.error) { showError(data.error); return; }
+                    pollConvert(data.job_id);
+                } else {
+                    showError('Upload failed');
+                }
+            };
+            xhr.onerror = () => showError('Upload failed');
+            xhr.open('POST', '/api/file/convert');
+            xhr.send(formData);
+        } catch (err) { showError(err.message); }
+    }
+
+    function pollConvert(jobId) {
+        document.getElementById('statusText').textContent = 'Converting...';
+        document.getElementById('progressFill').style.width = '50%';
+        const iv = setInterval(async () => {
+            try {
+                const res = await fetch(`/api/status/${jobId}`);
+                const job = await res.json();
+                if (job.status === 'converting') {
+                    document.getElementById('progressFill').style.width = (50 + job.progress/2) + '%';
+                    document.getElementById('statusText').textContent = `Converting... ${job.progress}%`;
+                } else if (job.status === 'done') {
+                    clearInterval(iv);
+                    document.getElementById('progressFill').style.width = '100%';
+                    document.getElementById('statusText').textContent = 'Ready!';
+                    document.getElementById('downloadArea').innerHTML = `<a class="btn-success" href="/api/download/${jobId}" style="display:inline-block;margin-top:12px">Download ${(job.format||'').toUpperCase()}</a>`;
+                    resetBtn();
+                } else if (job.status === 'error') {
+                    clearInterval(iv);
+                    showError(job.error);
+                }
+            } catch { clearInterval(iv); showError('Lost connection'); }
+        }, 800);
+    }
+
+    function showError(msg) {
+        document.getElementById('errorText').textContent = msg;
+        document.getElementById('statusText').textContent = 'Failed';
+        document.getElementById('progressFill').style.width = '0%';
+        resetBtn();
+    }
+
+    function resetBtn() {
+        const btn = document.getElementById('convertBtn');
+        btn.disabled = false; btn.textContent = 'Convert';
+    }
+</script>
+{% endblock %}
